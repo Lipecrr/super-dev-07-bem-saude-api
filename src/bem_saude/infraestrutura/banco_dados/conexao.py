@@ -8,7 +8,8 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from src.bem_saude.api.configuracoes import Configuracoes
+# from src.bem_saude.api.configuracoes import configuracoes
+from bem_saude.api.configuracoes import configuracoes
 
 
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 # Pool de conexões configurado para uso em produção
 # echo=False para não logar SQL (apenas um modo debug)
 engine = create_engine(
-    Configuracoes.DATABASE_URl,
+    configuracoes.DATABASE_URL,
     echo=False,
     pool_pre_ping=True, # Validar conexões antes de usar
     pool_size=5, # Número de conexões no pool

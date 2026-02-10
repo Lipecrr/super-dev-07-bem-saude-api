@@ -11,7 +11,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 from bem_saude.dominio.enums.status_cadastro import StatusCadastro
 
-class RecepcionistaCriarRequiest(BaseModel):
+class RecepcionistaCriarRequest(BaseModel):
     """"
     Schema para criação de recepcionista
 
@@ -36,10 +36,40 @@ class RecepcionistaCriarRequiest(BaseModel):
     )
     model_config = {
         "json_schema_extra": {
-            "examples": {
+            "examples": [
+                {
                 "nome": "Mario dos Santos",
                 "status": "ATIVO"
             }
+            ]
+        }
+    }
+
+
+class RecepcionistaAlterarRequest(BaseModel):
+    """"
+    Schema para alteração de recepcionista
+
+    Nome é obrigatório
+
+    Validações:
+    - nome: miínimo 3 caracteres, máximo 45 caracteres
+    """
+
+    nome: str = Field(
+        ...,
+        min_length=3,
+        max_length=255,
+        description="Nome completo do recepcionista",
+        examples=["Mario dos Santos"]
+    )
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                "nome": "Mario dos Santos",
+            }
+            ]
         }
     }
 
@@ -51,6 +81,12 @@ class RecepcionistaResponse(BaseModel):
 
     Retorna todos os dados do recepcionista, incluindo campos de auditoria.
     """
+    id: UUID = Field(
+        ...,
+        description="Identificador único do recepcionista, incluindo campos de auditoria.",
+        examples=["10b43b39-6467-41bd-bef1-f761d81e3f03"]
+        #UUID v7 generator
+    )
 
     nome: str = Field(
         ...,
@@ -74,9 +110,18 @@ class RecepcionistaResponse(BaseModel):
     )
     model_config = {
         "json_schema_extra": {
-            "examples": {
+            "examples": [
+                 {
                 "nome": "Mario dos Santos",
                 "status": "ATIVO"
             }
+            ]
         }
     }
+
+
+
+
+
+
+

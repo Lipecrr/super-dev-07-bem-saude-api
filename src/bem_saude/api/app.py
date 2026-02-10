@@ -11,6 +11,9 @@ Configura e inicializa a aplicação FastAPI com todos as dependencias:
 import logging
 from fastapi import FastAPI
 from bem_saude.api.configuracoes import configuracoes
+from bem_saude.api.rotas.recepcionista_rotas import router as recepcionista_router
+from bem_saude.infraestrutura.banco_dados.modelos.modelo_base import Base
+from bem_saude.infraestrutura.banco_dados.conexao import engine
 
 # Configurar logging antes de criar a aplicação
 logging.basicConfig(
@@ -45,6 +48,7 @@ def criar_aplicacao() -> FastAPI:
     logger.info("Configurando traatadores de excção")
 
     logger.info("Registrando rotas")
+    app.include_router(recepcionista_router)
 
     @app.get("/health", tags=["Sistemas"], summary="Health Check", description="Verifica se a API está  respondendo")
     def health_check():
@@ -54,6 +58,7 @@ def criar_aplicacao() -> FastAPI:
             "swagger_habilitado": configuracoes.swagger_habilitado
         }
     logger.info("Aplicação configurada com sucesso")
+    Base.metadata.create_all(engine)
     return app
 
 

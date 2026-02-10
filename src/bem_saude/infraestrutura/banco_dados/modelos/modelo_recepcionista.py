@@ -5,7 +5,7 @@ Mapeia a entidade Recepcionista para a tabela 'Recepcionista' no PostgreSQL.
 """
 from sqlalchemy import Column, String
 from sqlalchemy.dialects.postgresql import UUID
-from src.bem_saude.infraestrutura.banco_dados.modelos.modelo_base import ModeloBase
+from bem_saude.infraestrutura.banco_dados.modelos.modelo_base import ModeloBase
 
 
 class ModeloRecepcionista(ModeloBase):
