@@ -83,7 +83,7 @@ def busca_recepionista(
     session: Session = Depends(obter_sessao)):
     """Busca um recepcionista por ID."""
     repositorio = RepositorioRecepcionista(sessao=session)
-    recepcionista = repositorio.busacar_por_id(id)
+    recepcionista = repositorio.buscar_por_id(id)
     if not recepcionista:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUNT, detail="Recepcionista não encontrado")
 

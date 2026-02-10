@@ -30,7 +30,7 @@ class RepositorioRecepcionista:
         return True
     
 
-    def busacar_por_id(self, id: UUID) -> ModeloRecepcionista | None:
+    def buscar_por_id(self, id: UUID) -> ModeloRecepcionista | None:
         modelo = self.sessao.query(ModeloRecepcionista).filter(ModeloRecepcionista.id == id).first()
         return modelo
     
