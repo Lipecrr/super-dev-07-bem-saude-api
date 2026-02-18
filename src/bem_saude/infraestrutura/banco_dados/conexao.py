@@ -8,18 +8,13 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-# from src.bem_saude.api.configuracoes import configuracoes
 from bem_saude.api.configuracoes import configuracoes
-
-
-
-
 
 logger = logging.getLogger(__name__)
 
 # Engine do SQLAlchemy
 # Pool de conexões configurado para uso em produção
-# echo=False para não logar SQL (apenas um modo debug)
+# echo=False para não logar SQL (apenas em modo debug)
 engine = create_engine(
     configuracoes.DATABASE_URL,
     echo=False,
@@ -40,5 +35,5 @@ def obter_sessao() -> Session:
         logger.debug("Sessão de banco de dados criada")
         yield db
     finally:
-        db.close() #Sessão fechada automaticamente após o uso
+        db.close() # Sessão fechada automaticamente após o uso
         logger.debug("Sessão de banco de dados fechada")

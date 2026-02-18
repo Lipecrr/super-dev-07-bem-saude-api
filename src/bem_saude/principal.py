@@ -1,7 +1,7 @@
 """
 Ponto de entrada principal da aplicação
 
-Este módulo é o entru point para dodar a aplicação com uvcorn.
+Este módulo é o entry point para rodar a aplicação com uvicorn.
 
 Uso: 
     uvicorn bem_saude.principal:app --reload

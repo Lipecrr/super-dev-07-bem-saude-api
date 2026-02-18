@@ -2,11 +2,13 @@ from sqlalchemy import Column, DateTime
 from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
 
+
 class Base(DeclarativeBase):
     """
     Classe base para todos os modelos ORM.
     """
     pass
+
 
 class ModeloBase(Base):
     """
