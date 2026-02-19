@@ -1,9 +1,10 @@
 from http import HTTPStatus
 from uuid import UUID
-from uuid6 import uuid7
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from uuid6 import uuid7
 
+from bem_saude.api.auth import validar_token
 from bem_saude.api.schemas.recepcionista_schemas import RecepcionistaAlterarRequest, RecepcionistaCriarRequest, RecepcionistaResponse
 from bem_saude.infraestrutura.banco_dados.conexao import obter_sessao
 from bem_saude.infraestrutura.banco_dados.modelos.modelo_recepcionista import ModeloRecepcionista
@@ -14,7 +15,8 @@ from bem_saude.infraestrutura.repositorios.repositorio_recepcionista import Repo
 
 router = APIRouter(
     prefix="/recepcionistas",
-    tags=["Recepcionista"]
+    tags=["Recepcionista"],
+    dependencies=[Depends(validar_token)]
 )
 @router.post(
     "", 
@@ -30,8 +32,7 @@ router = APIRouter(
 )
 def criar_recepcionista(
     dados: RecepcionistaCriarRequest,
-    session: Session = Depends(obter_sessao),
-) -> RecepcionistaResponse:
+    session: Session = Depends(obter_sessao)) -> RecepcionistaResponse:
     recepcionista = ModeloRecepcionista(
         id=uuid7(),
         nome=dados.nome,
@@ -54,7 +55,7 @@ def criar_recepcionista(
         },
     },
 )
-def lista_recepcionistas(session: Session = Depends(obter_sessao)):
+def listar_recepcionistas(session: Session = Depends(obter_sessao)):
     """Lista todos os recepcionistas"""
     repositorio = RepositorioRecepcionista(sessao=session)
     recepcionistas = repositorio.listar()
@@ -77,7 +78,7 @@ def lista_recepcionistas(session: Session = Depends(obter_sessao)):
         },
     },
 )
-def busca_recepionista(id: UUID, session: Session = Depends(obter_sessao)):
+def buscar_recepcionista(id: UUID, session: Session = Depends(obter_sessao)):
     """Busca um recepcionista por ID."""
     repositorio = RepositorioRecepcionista(sessao=session)
     recepcionista = repositorio.buscar_por_id(id)
@@ -97,13 +98,12 @@ def busca_recepionista(id: UUID, session: Session = Depends(obter_sessao)):
         },
     },
 )
-def inativar_recepionista(id: UUID, session: Session = Depends(obter_sessao)):
+def inativar_recepcionista(id: UUID, session: Session = Depends(obter_sessao)):
     """Inativa um recepcionista por ID."""
     repositorio = RepositorioRecepcionista(sessao=session)
     inativou = repositorio.remover(id)
     if not inativou:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Recepcionista não encontrado")
-    
 
 
 @router.put(
@@ -119,15 +119,12 @@ def inativar_recepionista(id: UUID, session: Session = Depends(obter_sessao)):
         }
     }
 )
-def alterar_recepcionista(
-    id: UUID, 
-    dados: RecepcionistaAlterarRequest, 
-    session: Session = Depends(obter_sessao),
-):
+def alterar_recepcionista(id: UUID, dados: RecepcionistaAlterarRequest, session: Session = Depends(obter_sessao)):
     repositorio = RepositorioRecepcionista(sessao=session)
-    inativou = repositorio.editar(id, dados.nome)
-    if not inativou:
+    alterou = repositorio.editar(id, dados.nome)
+    if not alterou:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Recepcionista não encontrado")
+    
 
 @router.put(
     "/{id}/ativar",
@@ -139,14 +136,17 @@ def alterar_recepcionista(
         },
         404: {
             "description": "Recepcionista não encontrado"
-        }
-    }
+        },
+    },
 )
 def ativar_recepcionista(
-    id: UUID, 
+    id: UUID,
     session: Session = Depends(obter_sessao),
 ):
     repositorio = RepositorioRecepcionista(sessao=session)
-    inativou = repositorio.ativar(id)
-    if not inativou:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Recepcionista não encontrado")
+
+    ativou = repositorio.ativar(id)
+    if not ativou:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Recepcionista não encontrado."
+        )

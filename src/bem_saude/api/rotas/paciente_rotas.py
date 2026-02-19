@@ -1,40 +1,21 @@
-from datetime import date
 from http import HTTPStatus
 from uuid import UUID
-from uuid6 import uuid7
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from uuid6 import uuid7
 
-from bem_saude.api.schemas.paciente_schemas import PacienteCriarRequest, PacienteEditarRequest, PacientePesquisaResponse, PacienteResponse
-from bem_saude.dominio.enums.status_cadastro import StatusCadastro
+from bem_saude.api.auth import validar_token
 from bem_saude.infraestrutura.banco_dados.conexao import obter_sessao
 from bem_saude.infraestrutura.banco_dados.modelos.modelo_paciente import ModeloPaciente
 from bem_saude.infraestrutura.repositorios.repositorio_paciente import RepositorioPaciente
+from bem_saude.api.schemas.pacientes_schemas import PacienteAlterarRequest, PacienteCriarRequest, PacienteResponse
 
-# Router para endpoints de pacientes
-# Todas as rotas começam com /pacientes
 
 router = APIRouter(
     prefix="/pacientes",
-    tags=["Paciente"]
+    tags=["Paciente"],
+    dependencies=[Depends(validar_token)]
 )
-
-
-def _converter_status_para_bool(modelo: ModeloPaciente) -> dict:
-    """Converte o modelo ORM para dict com status como boolean."""
-    return {
-        "id": modelo.id,
-        "nome": modelo.nome,
-        "cpf": modelo.cpf,
-        "telefone": modelo.telefone,
-        "endereco": modelo.endereco,
-        "email": modelo.email,
-        "data_nascimento": modelo.data_nascimento,
-        "observacoes": modelo.observacoes,
-        "status": modelo.status == StatusCadastro.ATIVO.value,
-    }
-
-
 @router.post(
     "",
     response_model=PacienteResponse,
@@ -42,33 +23,31 @@ def _converter_status_para_bool(modelo: ModeloPaciente) -> dict:
     summary="Criar novo paciente",
     responses={
         201: {
-            "description": "Paciente criado com sucesso",
+            "description": "Paciente criado com sucesso.",
             "model": PacienteResponse
-        }
-    }
+        },
+    },
 )
 def criar_paciente(
     dados: PacienteCriarRequest,
-    session: Session = Depends(obter_sessao),
+    session: Session = Depends(obter_sessao)
 ) -> PacienteResponse:
-    data_nasc = None
-    if dados.data_nascimento:
-        data_nasc = date.fromisoformat(dados.data_nascimento)
-
+    """Cadastrar um paciente."""
     paciente = ModeloPaciente(
         id=uuid7(),
         nome=dados.nome,
+        status=dados.status,
         cpf=dados.cpf,
-        telefone=dados.telefone,
-        endereco=dados.endereco,
         email=dados.email,
-        data_nascimento=data_nasc,
+        telefone=dados.telefone,
+        tipo_sanguineo=dados.tipo_sanguineo,
         observacoes=dados.observacoes,
-        status=StatusCadastro.ATIVO.value,
+        endereco=dados.endereco,
+        data_nascimento=dados.data_nascimento,
     )
     repositorio = RepositorioPaciente(sessao=session)
     paciente = repositorio.criar(paciente)
-    return _converter_status_para_bool(paciente)
+    return paciente
 
 
 @router.get(
@@ -84,92 +63,102 @@ def criar_paciente(
     },
 )
 def listar_pacientes(session: Session = Depends(obter_sessao)):
-    """Lista todos os pacientes."""
+    """Listagem de todos os pacientes cadastrados."""
     repositorio = RepositorioPaciente(sessao=session)
     pacientes = repositorio.listar()
-    return [_converter_status_para_bool(p) for p in pacientes]
+    return pacientes
 
 
 @router.get(
     "/{id}",
-    response_model=PacientePesquisaResponse,
+    response_model=PacienteResponse,
     status_code=status.HTTP_200_OK,
-    summary="Buscar paciente filtrando pelo ID",
+    summary="Buscar paciente filtrando por ID",
     description="""
-            Busca um paciente específico pelo seu ID (UUID v7).
-
-            Retorna todos os dados do paciente.""",
+            Busca um paciente específico pelo seu ID (UUID v7).""",
     responses={
         200: {
             "description": "Paciente encontrado",
-            "model": PacientePesquisaResponse
-        },
-        404: {
-            "description": "Paciente não encontrado"
+            "model": PacienteResponse
         },
     },
 )
-def buscar_paciente(id: UUID, session: Session = Depends(obter_sessao)):
-    """Busca um paciente por ID."""
+def buscar_paciente(
+    id: UUID,
+    session: Session = Depends(obter_sessao)
+):
+    """Busca um paciente por seu ID."""
     repositorio = RepositorioPaciente(sessao=session)
     paciente = repositorio.buscar_por_id(id)
     if not paciente:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Paciente não encontrado")
-    return _converter_status_para_bool(paciente)
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Paciente não encontrado."
+            )
+    
+    return paciente
 
 
 @router.delete(
     "/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Inativar paciente",
+    summary="Inativar um paciente.",
     description="Inativar o paciente quando encontrado.",
     responses={
         204: {
-            "description": "Paciente inativado",
-        },
-        404: {
-            "description": "Paciente não encontrado"
+            "description": "Paciente encontrado e inativado."
         },
     },
 )
-def inativar_paciente(id: UUID, session: Session = Depends(obter_sessao)):
-    """Inativa um paciente por ID."""
-    repositorio = RepositorioPaciente(sessao=session)
-    inativou = repositorio.remover(id)
-    if not inativou:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Paciente não encontrado")
+def inativar_paciente(
+    id: UUID,
+    session: Session = Depends(obter_sessao)
+):
+    """Inativa um paciente por seu ID."""
 
+    repositorio = RepositorioPaciente(sessao=session)
+    inativou = repositorio.inativar(id)
+    if not inativou:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Paciente não encontrado."
+            )
+    
 
 @router.put(
     "/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Alterar dados do paciente",
+    summary="Alterar os dados de um paciente.",
     responses={
         204: {
-            "description": "Paciente alterado"
+            "description": "Paciente encontrado e modificado."
         },
         404: {
-            "description": "Paciente não encontrado"
-        }
-    }
+            "description": "Paciente não encontrado."
+        },
+    },
 )
 def alterar_paciente(
     id: UUID,
-    dados: PacienteEditarRequest,
-    session: Session = Depends(obter_sessao),
+    dados: PacienteAlterarRequest,
+    session: Session = Depends(obter_sessao)
 ):
+    """Alterar os dados de um paciente por seu ID."""
     repositorio = RepositorioPaciente(sessao=session)
-    editou = repositorio.editar(
+    alterou = repositorio.editar(
         id,
-        nome=dados.nome,
-        telefone=dados.telefone,
-        endereco=dados.endereco,
-        email=dados.email,
-        observacoes=dados.observacoes,
+        dados.nome,
+        dados.email,
+        dados.endereco,
+        dados.telefone,
+        dados.observacoes
     )
-    if not editou:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Paciente não encontrado")
-
+    if not alterou:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, 
+            detail="Paciente não encontrado."
+            )
+    
 
 @router.put(
     "/{id}/ativar",
@@ -181,12 +170,12 @@ def alterar_paciente(
         },
         404: {
             "description": "Paciente não encontrado"
-        }
-    }
+        },
+    },
 )
 def ativar_paciente(
     id: UUID,
-    session: Session = Depends(obter_sessao),
+    session: Session = Depends(obter_sessao)
 ):
     repositorio = RepositorioPaciente(sessao=session)
     ativou = repositorio.ativar(id)
